@@ -1,5 +1,6 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { generate } from "random-words";
+import Caret from "./Caret";
 
 function generateWords() {
 
@@ -13,18 +14,38 @@ function TypingBox() {
     const [currentCharIndex, setCurrentCharIndex] = useState(0);
     const [typedHistory, setTypedHistory] = useState<string[][]>([]);
 
+    const activeCharRef = useRef<HTMLSpanElement>(null);
+
     const getCharacterClasses = (wordIndex: number, characterIndex: number): string => {
 
         const actualCharacter = words[wordIndex][characterIndex];
         const typedCharacter = typedHistory[wordIndex]?.[characterIndex];
 
+        let classes: string[] = [];
+
         const skipped = wordIndex < currentWordIndex;
+        const isActive = wordIndex === currentWordIndex && characterIndex === currentCharIndex;
 
         if(typedCharacter == null) {
-            return skipped? "text-red-600 line-through" : "text-gray-500";
+            if(skipped) {
+                classes = [...classes, "text-red-600", "line-through"];
+            }
+            else {
+                classes.push("text-gray-500");
+            }
+        }
+        else if(typedCharacter == actualCharacter) {
+            classes.push("text-green-200");
+        }
+        else {
+            classes = [...classes, "text-red-600", "underline"];
         }
 
-        return typedCharacter === actualCharacter? "text-white" : "text-red-600 underline";
+        if(isActive) {
+            classes.push("white-Shadow");
+        }
+
+        return classes.join(" ");
     }
 
     const getRenderCharacter = (wordIndex: number, characterIndex: number): string => {
@@ -109,15 +130,18 @@ function TypingBox() {
           
         <div className="text-[#cac4ce] text-3xl py-16 mt-16 flex flex-wrap container mx-auto relative"> 
             { words.map((word, wordIndex) => {
+
                 const maxLength = Math.max(word.length, typedHistory[wordIndex]?.length || 0);
+                const renderLength = maxLength + 1;
 
                 return (
                     <span key={wordIndex} className="mr-6 mb-5">
                         {
-                            [...Array(maxLength)].map((_, characterIndex) => {
+                            [...Array(renderLength)].map((_, characterIndex) => {
+                                const isActive = wordIndex === currentWordIndex && characterIndex === currentCharIndex;
 
                                 return (
-                                    <span key={characterIndex} className={getCharacterClasses(wordIndex, characterIndex)}>
+                                    <span key={characterIndex} className={getCharacterClasses(wordIndex, characterIndex)} ref={isActive ? activeCharRef : null}>
                                         {getRenderCharacter(wordIndex, characterIndex)}
                                     </span>
                                 );
@@ -126,6 +150,7 @@ function TypingBox() {
                     </span>
                 );
             }) }
+            <Caret targetRef={activeCharRef} currentWordIndex={currentWordIndex} currentCharIndex={currentCharIndex} />
         </div>
     )
 }
