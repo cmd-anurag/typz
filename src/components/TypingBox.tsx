@@ -1,45 +1,93 @@
 import { useEffect, useState } from "react";
+import { generate } from "random-words";
+
+function generateWords() {
+
+    return generate({'exactly': 52}) as string[];
+}
 
 function TypingBox() {
 
-    const words = [
-        "sky", "imagination", "rust", "keyboard", "infinite",
-        "mug", "serendipity", "dog", "velocity", "truth",
-        "fire", "architecture", "whisper", "moonlight", "cat",
-        "entropy", "blink", "ocean", "circuit", "paradox",
-        "cliff", "wander", "quantum", "echo", "storm",
-        "canvas", "null", "fractal", "gravity", "syntax",
-        "glitch", "pulse", "dream", "crystal", "fog",
-        "script", "neuron", "flame", "island", "latch",
-        "threshold", "breeze", "warp", "flicker", "void",
-        "signal", "maze", "shatter", "prism", "blur"
-    ];
-
-
+    const [words, setWords] = useState<string[]>([]);
     const [currentWordIndex, setCurrentWordIndex] = useState(0);
     const [currentCharIndex, setCurrentCharIndex] = useState(0);
-    const typedHistoryInitial: string[][] = words.map(() => [])
-    const [typedHistory, setTypedHistory] = useState<string[][]>(typedHistoryInitial);
+    const [typedHistory, setTypedHistory] = useState<string[][]>([]);
 
+    const getCharacterClasses = (wordIndex: number, characterIndex: number): string => {
+
+        const actualCharacter = words[wordIndex][characterIndex];
+        const typedCharacter = typedHistory[wordIndex]?.[characterIndex];
+
+        const skipped = wordIndex < currentWordIndex;
+
+        if(typedCharacter == null) {
+            return skipped? "text-red-600 line-through" : "text-gray-500";
+        }
+
+        return typedCharacter === actualCharacter? "text-white" : "text-red-600 underline";
+    }
+
+    const getRenderCharacter = (wordIndex: number, characterIndex: number): string => {
+        const actualWord = words[wordIndex];
+        const typedWord = typedHistory[wordIndex] || [];
+
+        if(characterIndex < actualWord.length) {
+            return actualWord[characterIndex];
+        }
+
+        return typedWord[characterIndex] || "";
+    }
+
+
+    // for generating words.
+    useEffect(()=> {
+        setWords(generateWords());
+    }, []);
+
+    // for initializing/resetting typedHistory whenevr words change
+    useEffect(()=> {
+        if(words.length > 0) {
+            setTypedHistory(words.map(() => []));
+            setCurrentWordIndex(0);
+            setCurrentCharIndex(0);
+        }
+    }, [words]);
+
+    // for adding typing event listener and handler
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             const key = e.key;
 
             if(key === "Backspace") {
 
+                if(currentWordIndex === 0 && currentCharIndex === 0) {
+                    return;
+                }
+
                 const updated = [...typedHistory];
+
+
                 if(currentCharIndex > 0) {
                     updated[currentWordIndex].pop();
                     setTypedHistory(updated);
                     setCurrentCharIndex((prev) => prev-1);
                 }
+                else {
+                    updated[currentWordIndex].pop();
+                    setTypedHistory(updated);
+                    setCurrentWordIndex((prev) => prev-1);
+                    setCurrentCharIndex(updated[currentWordIndex-1].length);
+                }
+                // console.log(updated.flat().toString());
 
             }
             else if(key === " ") {
 
-                setCurrentWordIndex((prev) => prev+1);
-                setCurrentCharIndex(0);
-
+                if(currentCharIndex > 0) {
+                    setCurrentWordIndex((prev) => prev+1);
+                    setCurrentCharIndex(0);
+                }
+                // console.log(typedHistory.flat().toString());
             }
             else if(key.length === 1) {
 
@@ -47,7 +95,7 @@ function TypingBox() {
                 updated[currentWordIndex] = [...updated[currentWordIndex], key];
                 setTypedHistory(updated);
                 setCurrentCharIndex((prev) => prev+1);
-
+                // console.log(updated.flat().toString());
             }
         }
 
@@ -55,22 +103,30 @@ function TypingBox() {
         return () => {
             window.removeEventListener("keydown", handleKeyDown);
         }
-    }, [typedHistory, currentCharIndex, currentWordIndex])
+    }, [typedHistory, currentCharIndex, currentWordIndex, words])
 
     return (
-        <>  
-            <div className="text-[#cac4ce] text-3xl py-16 mt-16 flex flex-wrap container mx-auto"> 
-                {words.map((word, wordIndex) => {
-                    return <span key={wordIndex} className="mr-6 mb-5">
-                            {
-                                Array.from(word).map((character, characterIndex) => {
-                                    return <span key={characterIndex}>{character}</span>
-                                })
-                            }
-                        </span>;
-                })}
-            </div>
-        </>
+          
+        <div className="text-[#cac4ce] text-3xl py-16 mt-16 flex flex-wrap container mx-auto relative"> 
+            { words.map((word, wordIndex) => {
+                const maxLength = Math.max(word.length, typedHistory[wordIndex]?.length || 0);
+
+                return (
+                    <span key={wordIndex} className="mr-6 mb-5">
+                        {
+                            [...Array(maxLength)].map((_, characterIndex) => {
+
+                                return (
+                                    <span key={characterIndex} className={getCharacterClasses(wordIndex, characterIndex)}>
+                                        {getRenderCharacter(wordIndex, characterIndex)}
+                                    </span>
+                                );
+                            })
+                        }
+                    </span>
+                );
+            }) }
+        </div>
     )
 }
 
