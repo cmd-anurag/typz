@@ -1,18 +1,40 @@
-import { useEffect, useRef, useState } from "react";
-import { generate } from "random-words";
+import { useRef } from "react";
+import { useTypingSession } from "../hooks/useTypingSession";
+import {
+  calculateAccuracy,
+  calculateDuration,
+  calculateNetWPM,
+  calculateRawWPM,
+} from "../utils/stats";
+
 import Caret from "./Caret";
 
-function generateWords() {
-
-    return generate({'exactly': 52}) as string[];
-}
 
 function TypingBox() {
 
-    const [words, setWords] = useState<string[]>([]);
-    const [currentWordIndex, setCurrentWordIndex] = useState(0);
-    const [currentCharIndex, setCurrentCharIndex] = useState(0);
-    const [typedHistory, setTypedHistory] = useState<string[][]>([]);
+    const {
+        words,
+        typedHistory,
+        currentWordIndex,
+        currentCharIndex,
+        isFinished,
+        startTime,
+        endTime
+    } = useTypingSession();
+
+    let duration = 0;
+    let rawWPM = 0;
+    let netWPM = 0;
+    let accuracy = 0;
+
+
+
+    if(isFinished) {
+        duration = calculateDuration(startTime, endTime);
+        rawWPM = calculateRawWPM(typedHistory, duration);
+        netWPM = calculateNetWPM(typedHistory, words, duration);
+        accuracy = calculateAccuracy(typedHistory, words);
+    }
 
     const activeCharRef = useRef<HTMLSpanElement>(null);
 
@@ -59,76 +81,9 @@ function TypingBox() {
         return typedWord[characterIndex] || "";
     }
 
-
-    // for generating words.
-    useEffect(()=> {
-        setWords(generateWords());
-    }, []);
-
-    // for initializing/resetting typedHistory whenevr words change
-    useEffect(()=> {
-        if(words.length > 0) {
-            setTypedHistory(words.map(() => []));
-            setCurrentWordIndex(0);
-            setCurrentCharIndex(0);
-        }
-    }, [words]);
-
-    // for adding typing event listener and handler
-    useEffect(() => {
-        const handleKeyDown = (e: KeyboardEvent) => {
-            const key = e.key;
-
-            if(key === "Backspace") {
-
-                if(currentWordIndex === 0 && currentCharIndex === 0) {
-                    return;
-                }
-
-                const updated = [...typedHistory];
-
-
-                if(currentCharIndex > 0) {
-                    updated[currentWordIndex].pop();
-                    setTypedHistory(updated);
-                    setCurrentCharIndex((prev) => prev-1);
-                }
-                else {
-                    updated[currentWordIndex].pop();
-                    setTypedHistory(updated);
-                    setCurrentWordIndex((prev) => prev-1);
-                    setCurrentCharIndex(updated[currentWordIndex-1].length);
-                }
-                // console.log(updated.flat().toString());
-
-            }
-            else if(key === " ") {
-
-                if(currentCharIndex > 0) {
-                    setCurrentWordIndex((prev) => prev+1);
-                    setCurrentCharIndex(0);
-                }
-                // console.log(typedHistory.flat().toString());
-            }
-            else if(key.length === 1) {
-
-                const updated = [...typedHistory];
-                updated[currentWordIndex] = [...updated[currentWordIndex], key];
-                setTypedHistory(updated);
-                setCurrentCharIndex((prev) => prev+1);
-                // console.log(updated.flat().toString());
-            }
-        }
-
-        window.addEventListener("keydown", handleKeyDown);
-        return () => {
-            window.removeEventListener("keydown", handleKeyDown);
-        }
-    }, [typedHistory, currentCharIndex, currentWordIndex, words])
-
     return (
-          
-        <div className="text-[#cac4ce] text-3xl py-16 mt-8 flex flex-wrap container mx-auto relative"> 
+        <>
+        <div className="text-[#cac4ce] text-3xl py-16 pl-8 mt-8 flex flex-wrap container mx-auto relative"> 
             { words.map((word, wordIndex) => {
 
                 const maxLength = Math.max(word.length, typedHistory[wordIndex]?.length || 0);
@@ -151,7 +106,31 @@ function TypingBox() {
                 );
             }) }
             <Caret targetRef={activeCharRef} currentWordIndex={currentWordIndex} currentCharIndex={currentCharIndex} />
+
+            
         </div>
+        {/* for now let the results be nested insde typingbox i'll refactor this later by moving typing state to a common parent */}
+        {isFinished && 
+            (<div className="container mx-auto text-7xl flex justify-between items-center">
+                <div className="flex items-center">
+                    <span className="material-symbols-outlined text-gray-700 mr-5">alarm</span>
+                    <span className="text-white text-5xl">{Math.round(duration)}s</span>
+                </div>
+                <div className="flex items-center">
+                    <span className="material-symbols-outlined text-gray-700 mr-5">electric_bolt</span>
+                    <span className="text-white text-5xl">{rawWPM}</span>
+                </div>
+                <div className="flex items-center">
+                    <span className="material-symbols-outlined text-gray-700 mr-5">keyboard</span>
+                    <span className="text-white text-5xl">{netWPM}</span>
+                </div>
+                <div className="flex items-center">
+                    <span className="material-symbols-outlined text-gray-700 mr-5">target</span>
+                    <span className="text-white text-5xl">{Math.max(0, accuracy)}%</span>
+                </div>
+                
+            </div>)}
+        </>
     )
 }
 
