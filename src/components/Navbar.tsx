@@ -1,12 +1,15 @@
 function Navbar() {
     return (
         <>
-            <div className="px-16 py-8 flex justify-around">
-                <h1 className="text-4xl text-[#f2e9e4] font-bold">typx</h1>
-                <ul className="flex items-center text-[#c9ada7] gap-10">
-                    <li><a href="#" className="hover:text-[#f2e9e4] duration-300">Home</a></li>
-                    <li><a href="#" className="hover:text-[#f2e9e4] duration-300">Stats</a></li>
-                    <li><a href="#" className="hover:text-[#f2e9e4] duration-300">About us</a></li>
+            <div className="px-16 py-4 mt-8 flex justify-around items-center">
+                <div className="flex">
+                    <img src="/icon.svg" className="size-13 mr-4"></img>
+                    <h1 className="text-5xl text-[#f2e9e4] delicious-handrawn-regular">typz</h1>
+                </div> 
+                <ul className="flex items-center text-[28px] text-[#e0fbfc] gap-13">
+                    <span className="material-symbols-outlined"><a href="#">home</a></span>
+                    <span className="material-symbols-outlined"><a href="#">info</a></span>
+                    <span className="material-symbols-outlined"><a href="#">account_circle</a></span>
                 </ul>
             </div>
         </>

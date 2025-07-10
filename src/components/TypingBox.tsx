@@ -35,7 +35,7 @@ function TypingBox() {
             }
         }
         else if(typedCharacter == actualCharacter) {
-            classes.push("text-green-200");
+            classes.push("text-white");
         }
         else {
             classes = [...classes, "text-red-600", "underline"];
@@ -128,7 +128,7 @@ function TypingBox() {
 
     return (
           
-        <div className="text-[#cac4ce] text-3xl py-16 mt-16 flex flex-wrap container mx-auto relative"> 
+        <div className="text-[#cac4ce] text-3xl py-16 mt-8 flex flex-wrap container mx-auto relative"> 
             { words.map((word, wordIndex) => {
 
                 const maxLength = Math.max(word.length, typedHistory[wordIndex]?.length || 0);
